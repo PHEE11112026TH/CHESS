@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {initialBoard,moves,apply,chooseMove} from '../src/engine.js';
+const empty=()=>Array(64).fill(0);
+test('starts with eight per side and seven opening moves',()=>{const b=initialBoard();assert.equal(b.filter(p=>p===1).length,8);assert.equal(b.filter(p=>p===-1).length,8);assert.equal(moves(b,1).length,7);});
+test('men cannot move or capture backward',()=>{const b=empty();b[26]=1;b[35]=-1;assert(moves(b,1).every(m=>!m.taken.length&&m.path[1]<26));});
+test('captures override quiet moves',()=>{const b=empty();b[42]=1;b[33]=-1;b[46]=1;assert.deepEqual(moves(b,1),[{path:[42,24],taken:[33]}]);});
+test('capture must continue',()=>{const b=empty();b[42]=1;b[33]=-1;b[17]=-1;assert.deepEqual(moves(b,1),[{path:[42,24,10],taken:[33,17]}]);});
+test('king lands immediately beyond victim',()=>{const b=empty();b[58]=2;b[30]=-1;assert.deepEqual(moves(b,1),[{path:[58,23],taken:[30]}]);});
+test('promotion ends turn',()=>{const b=empty();b[17]=1;b[10]=-1;b[12]=-1;const m=moves(b,1)[0];assert.deepEqual(m.path,[17,3]);assert.equal(apply(b,m)[3],2);});
+test('quiet promotion',()=>{const b=empty();b[10]=1;assert.equal(apply(b,moves(b,1)[0])[1],2);});
+test('capture alternatives need not maximize count',()=>{const b=empty();b[44]=1;b[35]=-1;b[37]=-1;b[17]=-1;const options=moves(b,1);assert(options.some(m=>m.taken.length===1));assert(options.some(m=>m.taken.length===2));});
+test('AI returns legal move without mutating input',()=>{const b=initialBoard(),copy=b.slice();assert(moves(b,1).some(m=>JSON.stringify(m)===JSON.stringify(chooseMove(b,1,2))));assert.deepEqual(b,copy);});
+test('blocked side has no moves',()=>{const b=empty();b[1]=1;assert.equal(moves(b,1).length,0);});
